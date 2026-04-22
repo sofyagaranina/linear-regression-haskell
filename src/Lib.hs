@@ -18,6 +18,7 @@ run trainPath testPath = do
                 Right testDataset -> do
                     
                     putStr "Enter learning rate (default 0.01): "
+                    -- принудительно из буфера на экран
                     hFlush stdout
                     lrInput <- getLine
                     let lr = if null lrInput then 0.01 else read lrInput
