@@ -1,0 +1,54 @@
+name:                gloss-project
+version:             0.1.0.0
+github:              "local/gloss-project"
+license:             BSD-3-Clause
+author:              "Sofya Garanina"
+maintainer:          "local@example.com"
+copyright:           "2026 Sofya Garanina"
+
+extra-source-files:
+- README.md
+- CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         "Coursework project: linear regression in Haskell with core data types and training functions."
+
+dependencies:
+- base >= 4.7 && < 5
+
+ghc-options:
+- -Wall
+- -Wcompat
+- -Widentities
+- -Wincomplete-record-updates
+- -Wincomplete-uni-patterns
+- -Wmissing-export-lists
+- -Wmissing-home-modules
+- -Wpartial-fields
+- -Wredundant-constraints
+
+library:
+  source-dirs: src
+  exposed-modules:
+  - DataLoader
+  - Lib
+  - LinearRegression
+  - Metrics
+  - Types
+
+executables:
+  gloss-project-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - gloss-project
