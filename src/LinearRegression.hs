@@ -14,11 +14,13 @@ trainModel params dataset =
     initialWeights = Weights (replicate featureCount 0.0)
     initialBias = Bias 0.0
     initialState = (initialWeights, initialBias)
-    finalState = process initialState (epochs params)
-    where process state 0 = state
-          process state n = process (one_step state) (n-1)
+    finalState = iterateN (epochs params) one_step initialState
     finalWeights = getWeights (fst finalState)
     finalBias = getBias (snd finalState)
+
+    iterateN :: Int -> (a -> a) -> a -> a
+    iterateN 0 _ x = x
+    iterateN n f x = iterateN (n-1) f (f x)
 
     one_step :: (Weights, Bias) -> (Weights, Bias)
     one_step (weights, biasValue) =
@@ -78,4 +80,4 @@ regGradient L2 lambdaCoeff (Weights ws) = map ((2.0 * lambdaCoeff) * ) ws
 
 getFeatureCount :: [DataPoint] -> Int
 getFeatureCount [] = 0
-getFeatureCount ((DataPoint features label) : _) = length (featureList features)
+getFeatureCount ((DataPoint features _) : _) = length (featureList features)

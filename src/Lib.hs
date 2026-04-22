@@ -25,7 +25,7 @@ run trainPath testPath = do
                     putStr "Enter epochs (default 1000): "
                     hFlush stdout
                     epochsInput <- getLine
-                    let epochs = if null epochsInput then 1000 else read epochsInput
+                    let epochsCount = if null epochsInput then 1000 else read epochsInput
                     
                     putStr "Enter regularization (NoReg/L1/L2) (default L1): "
                     hFlush stdout
@@ -40,21 +40,29 @@ run trainPath testPath = do
                     lambdaInput <- getLine
                     let lambda = if null lambdaInput then 0.01 else read lambdaInput
                     
-                    let params = HyperParams lr epochs reg lambda
-                    
-                    putStrLn "\nTraining model..."
+                    let params = HyperParams lr epochsCount reg lambda
                     let model = trainModel params trainingDataset
                     
                     let correctAnswers = map getCorrectValue (datasetPoints testDataset)
                     let predictions = map (predictForPoint model) (datasetPoints testDataset)
-                    let error = mse correctAnswers predictions
+                    let mseValue = mse correctAnswers predictions
                     
-                    let output = "Results" ++
+                    let first10 = take 10 (zip correctAnswers predictions)
+                        predictionsBlock = "  # | Actual | Predicted | Error\n" ++
+                                          "----+--------+-----------+--------\n" ++
+                                          unlines (map (\(i, (a, p)) -> 
+                                              "  " ++ show i ++ " | " ++ 
+                                              take 6 (show a ++ "      ") ++ " | " ++
+                                              take 9 (show p ++ "         ") ++ " | " ++
+                                              show (p - a)) (zip [1::Int,2,3,4,5,6,7,8,9,10] first10))
+                    let output = "Results: " ++
                                  "Learning rate: " ++ show lr ++ "\n" ++
-                                 "Epochs: " ++ show epochs ++ "\n" ++
+                                 "Epochs: " ++ show epochsCount ++ "\n" ++
                                  "Regularization: " ++ show reg ++ "\n" ++
                                  "Lambda: " ++ show lambda ++ "\n" ++
-                                 "MSE = " ++ show error
+                                 "MSE = " ++ show mseValue ++ "\n" ++
+                                 predictionsBlock
+                    
                     return (Right output)
 
 getCorrectValue :: DataPoint -> Double
