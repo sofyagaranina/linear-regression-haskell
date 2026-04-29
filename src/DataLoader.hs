@@ -6,6 +6,7 @@ import Data.Char (isSpace)
 
 loadData :: FilePath -> IO (Either String Dataset)
 loadData path = do
+    -- doesFileExist :: FilePath -> IO Bool
     exists <- doesFileExist path
     if not exists
         then return (Left ("File not found: " ++ path))

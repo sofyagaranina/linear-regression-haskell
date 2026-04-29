@@ -1,0 +1,1 @@
+LinearRegressionModel {modelWeights = [1.9678360740553251,1.9742366531149929,1.9867686806411022], modelBias = -0.6164204728028824, modelParams = HyperParams {learningRate = 1.0e-2, epochs = 1000, regularization = L1, lambdaValue = 1.0e-2}}

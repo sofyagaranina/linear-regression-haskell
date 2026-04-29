@@ -30,6 +30,7 @@ library
       LinearRegression
       Metrics
       Types
+      ModelSerializer
   other-modules:
       Paths_gloss_project
   autogen-modules:
