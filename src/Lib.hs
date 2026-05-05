@@ -10,21 +10,18 @@ import System.Directory (doesFileExist)
 
 run :: FilePath -> FilePath -> Maybe FilePath -> IO (Either String String)
 run trainPath testPath modelPathOption = do
-    -- Загрузка тестовых данных
     testResult <- loadData testPath
     case testResult of
         Left err -> return (Left err)
         Right testDataset -> do
             let testPoints = datasetPoints testDataset
             
-            -- Получение модели в зависимости от режима
             modelResult <- case modelPathOption of
                 Just modelPath -> do
                     putStrLn "Choose mode:"
                     putStrLn "  1 - Train new model and save to file"
                     putStrLn "  2 - Load existing model from file"
                     putStr "Enter choice (1 or 2): "
-                    hFlush stdout
                     modeInput <- getLine
                     case modeInput of
                         "1" -> do
@@ -41,12 +38,10 @@ run trainPath testPath modelPathOption = do
             case modelResult of
                 Left err -> return (Left err)
                 Right (model, statusMessage, saveMessage) -> do
-                    -- Предсказания
                     let correctAnswers = map getCorrectValue testPoints
                     let predictions = map (predictForPoint model) testPoints
                     let mseValue = mse correctAnswers predictions
                     
-                    -- Вывод первых 10 предсказаний
                     let first10 = take 10 (zip correctAnswers predictions)
                         predictionsBlock = "  # | Actual | Predicted | Error\n" ++
                                           "----+--------+-----------+--------\n" ++
@@ -62,21 +57,20 @@ run trainPath testPath modelPathOption = do
                     let reg = regularization params
                         
                     let output = "Results\n" ++
-                                 "Dataset Info" ++
+                                 "Dataset Info\n" ++
                                  "Test samples: " ++ show (length testPoints) ++ "\n" ++
                                  "Number of features: " ++ show (length (modelWeights model)) ++ "\n" ++
-                                 "Hyperparameters" ++
+                                 "Hyperparameters\n" ++
                                  "Learning rate: " ++ show (learningRate params) ++ "\n" ++
                                  "Epochs: " ++ show (epochs params) ++ "\n" ++
                                  "Regularization: " ++ show reg ++ "\n" ++
                                  "Lambda: " ++ show (lambdaValue params) ++ "\n" ++
                                  "MSE = " ++ show mseValue ++ "\n" ++
-                                 "Predictions (first 10)" ++
+                                 "Predictions (first 10)\n" ++
                                  predictionsBlock
                     
                     return (Right output)
 
--- Обучение с нуля и сохранение
 trainAndSave :: FilePath -> FilePath -> IO (Either String (LinearRegressionModel, String, String))
 trainAndSave trainPath modelPath = do
     trainResult <- trainNewModel trainPath
@@ -88,7 +82,6 @@ trainAndSave trainPath modelPath = do
                 Right _ -> return (Right (model, statusMessage, "Model saved to: " ++ modelPath))
                 Left err -> return (Left $ "Failed to save model: " ++ err)
 
--- Загрузка существующей модели
 loadAndTest :: FilePath -> Dataset -> IO (Either String (LinearRegressionModel, String, String))
 loadAndTest modelPath testDataset = do
     fileExists <- doesFileExist modelPath
@@ -103,7 +96,6 @@ loadAndTest modelPath testDataset = do
                     return (Right (model, msg, "Model was loaded (not saved)"))
                 Left err -> return (Left err)
 
--- Режим без файла: только обучение
 trainOnly :: FilePath -> Dataset -> IO (Either String (LinearRegressionModel, String, String))
 trainOnly trainPath testDataset = do
     trainResult <- trainNewModel trainPath
@@ -111,7 +103,6 @@ trainOnly trainPath testDataset = do
         Left err -> return (Left err)
         Right (model, statusMessage) -> return (Right (model, statusMessage, "Model was not saved (no file specified)"))
 
--- Обучение 
 trainNewModel :: FilePath -> IO (Either String (LinearRegressionModel, String))
 trainNewModel trainPath = do
     trainingResult <- loadData trainPath
@@ -127,15 +118,17 @@ trainNewModel trainPath = do
                       ", Features: " ++ show featureCount
             putStrLn "Enter hyperparameters:"
             
-            putStr "Enter learning rate (default 0.01): "
+            putStr "Enter learning rate (default 0.01, must be > 0): "
             hFlush stdout
             lrInput <- getLine
-            let lr = if null lrInput then 0.01 else read lrInput
+            let lrRaw = if null lrInput then 0.01 else read lrInput
+            lr <- if lrRaw <= 0 then return (Left "Learning rate must be positive") else return (Right lrRaw)
             
-            putStr "Enter epochs (default 1000): "
+            putStr "Enter epochs (default 1000, must be >= 0): "
             hFlush stdout
             epochsInput <- getLine
-            let epochsCount = if null epochsInput then 1000 else read epochsInput
+            let epochsRaw = if null epochsInput then 1000 else read epochsInput
+            epochsCount <- if epochsRaw < 0 then return (Left "Epochs cannot be negative") else return (Right epochsRaw)
             
             putStr "Enter regularization (NoReg/L1/L2) (default L1): "
             hFlush stdout
@@ -145,16 +138,21 @@ trainNewModel trainPath = do
                     "L2" -> L2
                     _ -> L1
             
-            putStr "Enter lambda (default 0.01): "
+            putStr "Enter lambda (default 0.01, must be >= 0): "
             hFlush stdout
             lambdaInput <- getLine
-            let lambda = if null lambdaInput then 0.01 else read lambdaInput
+            let lambdaRaw = if null lambdaInput then 0.01 else read lambdaInput
+            lambda <- if lambdaRaw < 0 then return (Left "Lambda cannot be negative") else return (Right lambdaRaw)
             
-            let params = HyperParams lr epochsCount reg lambda
-            let model = trainModel params trainingDataset
-            
-            putStrLn "Model training completed."
-            return (Right (model, "Model trained from scratch"))
+            case (lr, epochsCount, lambda) of
+                (Left err, _, _) -> return (Left err)
+                (_, Left err, _) -> return (Left err)
+                (_, _, Left err) -> return (Left err)
+                (Right lrVal, Right epochsVal, Right lambdaVal) -> do
+                    let params = HyperParams lrVal epochsVal reg lambdaVal
+                    let model = trainModel params trainingDataset
+                    putStrLn "Model training completed."
+                    return (Right (model, "Model trained from scratch"))
 
 getCorrectValue :: DataPoint -> Double
 getCorrectValue point = labelValue (pointLabel point)
